@@ -10,13 +10,30 @@ This application allows you to compare two documents and identify key difference
 - Assess the importance of each change
 - Export comparison results in multiple formats
 
-## Quick Start with Pre-loaded Tesla Annual Reports
+## Application Architecture
 
-The application includes two pre-loaded documents for easy testing:
-- Tesla's 2022 Annual Report
-- Tesla's 2023 Annual Report
-
-Simply click the "Upload Tesla's Annual Report" buttons next to each file upload area to automatically load these documents.
+```mermaid
+graph TD
+    A[User Interface] --> B[Document Upload]
+    B --> C[Text Extraction]
+    C --> D[Azure OpenAI Service]
+    D --> E[Comparison Results]
+    E --> F[Export/Download]
+    
+    subgraph "Document Processing"
+    B
+    C
+    end
+    
+    subgraph "AI Analysis"
+    D
+    end
+    
+    subgraph "Result Handling"
+    E
+    F
+    end
+```
 
 ## Environment Configuration
 
