@@ -5,6 +5,7 @@ import { FileCheck, FileText } from 'lucide-react';
 import { mockCompareDocuments } from '../utils/mockComparison';
 import { ComparisonResult } from '../types';
 import { compareDocumentsWithAI } from '../utils/azure-openai';
+import { extractTextFromDocument } from '../utils/pdf-utils';
 
 interface ComparisonFormProps {
   onSubmit: (result: ComparisonResult) => void;
@@ -21,6 +22,7 @@ const ComparisonForm: React.FC<ComparisonFormProps> = ({ onSubmit, setIsLoading 
   const [doc2Name, setDoc2Name] = useState<string>('');
   // Always use AI for comparison
   const [useAI, setUseAI] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,26 +33,50 @@ const ComparisonForm: React.FC<ComparisonFormProps> = ({ onSubmit, setIsLoading 
     
     setIsSubmitting(true);
     setIsLoading(true);
+    setError(null);
     
     try {
       let result;
+      let doc1Content = '';
+      let doc2Content = '';
       
-      // Handle special case for Tesla reports
-      const doc1Content = document1?.name.includes("NASDAQ_TSLA") 
-        ? await fetchTeslaReport(document1.name)
-        : await readFileAsText(document1);
-        
-      const doc2Content = document2?.name.includes("NASDAQ_TSLA")
-        ? await fetchTeslaReport(document2.name)
-        : await readFileAsText(document2);
+      try {
+        // Extract text from document 1
+        console.log(`Processing document 1: ${document1.name}`);
+        doc1Content = await extractTextFromDocument(document1);
+        console.log(`Document 1 processed: ${doc1Content.substring(0, 100)}...`);
+      } catch (error: any) {
+        console.error('Error processing document 1:', error);
+        // Don't set error yet, still try to process doc2 and use mock data
+        doc1Content = `[Failed to process ${document1.name}: ${error.message || 'Unknown error'}]`;
+      }
       
-      if (useAI && isAzureOpenAIConfigured()) {
+      try {
+        // Extract text from document 2
+        console.log(`Processing document 2: ${document2.name}`);
+        doc2Content = await extractTextFromDocument(document2);
+        console.log(`Document 2 processed: ${doc2Content.substring(0, 100)}...`);
+      } catch (error: any) {
+        console.error('Error processing document 2:', error);
+        // Don't set error yet, still try to use mock data
+        doc2Content = `[Failed to process ${document2.name}: ${error.message || 'Unknown error'}]`;
+      }
+      
+      // If both document extractions failed completely with empty content, use mock
+      if (!doc1Content && !doc2Content) {
+        console.warn('Both document extractions failed, using mock comparison');
+        result = await mockCompareDocuments(criteria, document1, document2);
+        setError('Failed to extract content from both documents. Using mock comparison instead.');
+      } else if (useAI && isAzureOpenAIConfigured()) {
         // Use Azure OpenAI for comparison
         try {
           console.log('Using Azure OpenAI for document comparison');
+          
+          // If either document has extraction issues but still has some content, proceed with what we have
           result = await compareDocumentsWithAI(criteria, doc1Content, doc2Content);
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error with Azure OpenAI, falling back to mock:', error);
+          setError(`Azure OpenAI API error: ${error.message || 'Unknown error'}. Using mock comparison instead.`);
           result = await mockCompareDocuments(criteria, document1, document2);
         }
       } else {
@@ -66,26 +92,11 @@ const ComparisonForm: React.FC<ComparisonFormProps> = ({ onSubmit, setIsLoading 
       // Show success animation
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 2000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error comparing documents:', error);
+      setError(`Error comparing documents: ${error.message || 'Unknown error'}. Please try again.`);
       setIsSubmitting(false);
       setIsLoading(false);
-    }
-  };
-
-  // Function to fetch Tesla report content
-  const fetchTeslaReport = async (filename: string): Promise<string> => {
-    try {
-      const response = await fetch(`/${filename}`);
-      if (!response.ok) {
-        throw new Error(`Failed to load file: ${response.status} ${response.statusText}`);
-      }
-      
-      // For PDFs, return a placeholder text since we're mocking the comparison anyway
-      return `Content of ${filename} (PDF content would be processed here in production)`;
-    } catch (error) {
-      console.error(`Error fetching Tesla report:`, error);
-      return `Failed to load ${filename}`;
     }
   };
 
@@ -101,11 +112,18 @@ const ComparisonForm: React.FC<ComparisonFormProps> = ({ onSubmit, setIsLoading 
 
   // Check if Azure OpenAI is configured
   const isAzureOpenAIConfigured = (): boolean => {
-    return !!(
-      import.meta.env.VITE_AZURE_OPENAI_API_KEY &&
-      import.meta.env.VITE_AZURE_OPENAI_ENDPOINT &&
-      import.meta.env.VITE_AZURE_OPENAI_DEPLOYMENT_NAME
-    );
+    // Check browser environment variables (from .env file loaded by Vite)
+    const apiKey = import.meta.env.VITE_AZURE_OPENAI_API_KEY;
+    const endpoint = import.meta.env.VITE_AZURE_OPENAI_ENDPOINT;
+    const deploymentName = import.meta.env.VITE_AZURE_OPENAI_DEPLOYMENT_NAME;
+    
+    const isConfigured = !!(apiKey && endpoint && deploymentName);
+    if (!isConfigured) {
+      console.warn('Azure OpenAI not configured. Using mock comparison instead.');
+    }
+    
+    // Use direct environment variables if not loaded through Vite
+    return isConfigured;
   };
 
   const loadTeslaReport = (year: '2022' | '2023', setDocument: React.Dispatch<React.SetStateAction<File | null>>, setDocName: React.Dispatch<React.SetStateAction<string>>) => {
@@ -137,7 +155,7 @@ const ComparisonForm: React.FC<ComparisonFormProps> = ({ onSubmit, setIsLoading 
           id="criteria"
           rows={3}
           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent resize-none"
-          placeholder="Fill here..."
+          placeholder="E.g., Compare changes in financial performance, product strategies, and market outlook. Highlight significant differences."
           value={criteria}
           onChange={(e) => setCriteria(e.target.value)}
           required
@@ -147,9 +165,12 @@ const ComparisonForm: React.FC<ComparisonFormProps> = ({ onSubmit, setIsLoading 
       <div className="flex flex-col md:flex-row md:items-start">
         <div className="flex-grow">
           <FileUpload
-            label="Upload Document"
+            label="Upload Document 1"
             acceptedFileTypes=".pdf,.doc,.docx,.txt"
-            onChange={setDocument1}
+            onChange={(file) => {
+              setDocument1(file);
+              if (file) setDoc1Name(file.name);
+            }}
             required
             fileName={doc1Name}
           />
@@ -159,14 +180,23 @@ const ComparisonForm: React.FC<ComparisonFormProps> = ({ onSubmit, setIsLoading 
       <div className="flex flex-col md:flex-row md:items-start">
         <div className="flex-grow">
           <FileUpload
-            label="Upload Second Document"
+            label="Upload Document 2"
             acceptedFileTypes=".pdf,.doc,.docx,.txt"
-            onChange={setDocument2}
+            onChange={(file) => {
+              setDocument2(file);
+              if (file) setDoc2Name(file.name);
+            }}
             required
             fileName={doc2Name}
           />
         </div>
       </div>
+      
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">
+          {error}
+        </div>
+      )}
       
       <div className="flex items-center justify-between">
         <Button 
@@ -175,7 +205,7 @@ const ComparisonForm: React.FC<ComparisonFormProps> = ({ onSubmit, setIsLoading 
           fullWidth
           icon={showSuccess ? <FileCheck className="h-4 w-4" /> : undefined}
         >
-          {isSubmitting ? 'Processing...' : showSuccess ? 'Success!' : 'Submit'}
+          {isSubmitting ? 'Processing...' : showSuccess ? 'Success!' : 'Compare Documents'}
         </Button>
       </div>
     </form>

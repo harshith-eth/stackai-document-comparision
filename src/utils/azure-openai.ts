@@ -30,29 +30,32 @@ export async function compareDocumentsWithAI(
 ): Promise<ComparisonResponse> {
   try {
     // Check if environment variables are available
-    const apiKey = import.meta.env.VITE_AZURE_OPENAI_API_KEY;
-    const endpoint = import.meta.env.VITE_AZURE_OPENAI_ENDPOINT;
-    const deploymentName = import.meta.env.VITE_AZURE_OPENAI_DEPLOYMENT_NAME;
-    const apiVersion = import.meta.env.VITE_AZURE_OPENAI_API_VERSION;
+    const apiKey = import.meta.env.VITE_AZURE_OPENAI_API_KEY || process.env.AZURE_OPENAI_API_KEY;
+    const endpoint = import.meta.env.VITE_AZURE_OPENAI_ENDPOINT || process.env.AZURE_OPENAI_ENDPOINT;
+    const deploymentName = import.meta.env.VITE_AZURE_OPENAI_DEPLOYMENT_NAME || process.env.AZURE_OPENAI_DEPLOYMENT_NAME;
+    const apiVersion = import.meta.env.VITE_AZURE_OPENAI_API_VERSION || process.env.AZURE_OPENAI_API_VERSION || '2025-01-01-preview';
     
-    if (!apiKey || !endpoint || !deploymentName || !apiVersion) {
+    if (!apiKey || !endpoint || !deploymentName) {
       console.error('Azure OpenAI environment variables are not properly configured');
       throw new Error('Azure OpenAI configuration missing');
     }
     
+    console.log(`Using Azure OpenAI endpoint: ${endpoint}`);
+    console.log(`Using Azure OpenAI deployment: ${deploymentName}`);
+    
     // Construct the API URL
     const apiUrl = `${endpoint}/openai/deployments/${deploymentName}/chat/completions?api-version=${apiVersion}`;
     
-    // Prepare the prompt
+    // Prepare the prompt with explicit instructions for document comparison
     const prompt = `
     I need you to compare two documents and identify the key differences between them.
     Use the following criteria for comparison: ${criteria}
     
     Document 1:
-    ${document1Content}
+    ${truncateIfNeeded(document1Content, 10000)}
     
     Document 2:
-    ${document2Content}
+    ${truncateIfNeeded(document2Content, 10000)}
     
     For each relevant section, provide:
     1. The section name or topic
@@ -75,7 +78,10 @@ export async function compareDocumentsWithAI(
     }
     
     Focus on meaningful differences, not formatting or minor wording changes unless they alter the meaning.
+    Ensure your response is a valid JSON object.
     `;
+    
+    console.log('Sending request to Azure OpenAI...');
     
     // Make the API request
     const response = await fetch(apiUrl, {
@@ -97,9 +103,9 @@ export async function compareDocumentsWithAI(
     });
     
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Azure OpenAI API error:', errorData);
-      throw new Error(`API request failed: ${response.status}`);
+      const errorText = await response.text();
+      console.error('Azure OpenAI API error:', errorText);
+      throw new Error(`API request failed with status: ${response.status}`);
     }
     
     const data = await response.json();
@@ -121,4 +127,17 @@ export async function compareDocumentsWithAI(
     console.error('Error in compareDocumentsWithAI:', error);
     throw error;
   }
+}
+
+/**
+ * Helper function to truncate text if it exceeds a maximum length
+ * This is to ensure we don't exceed token limits in the API
+ */
+function truncateIfNeeded(text: string, maxLength: number): string {
+  if (text.length <= maxLength) {
+    return text;
+  }
+  
+  // Add a message indicating truncation
+  return text.substring(0, maxLength) + `\n\n[Content truncated due to length. Original length: ${text.length} characters]`;
 } 
