@@ -6,7 +6,7 @@ const Header = () => {
     <div className="mb-8 relative">
       <div className="absolute top-0 right-0">
         <a 
-          href="https://github.com/harshithio/document-comparison" 
+          href="https://github.com/harshith-eth/stackai-document-comparision" 
           target="_blank" 
           rel="noopener noreferrer"
           className="inline-flex items-center px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700 transition-colors"
