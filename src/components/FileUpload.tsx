@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Upload } from 'lucide-react';
 
 interface FileUploadProps {
@@ -6,25 +6,33 @@ interface FileUploadProps {
   acceptedFileTypes: string;
   onChange: (file: File | null) => void;
   required?: boolean;
+  fileName?: string;
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({ 
   label, 
   acceptedFileTypes, 
   onChange,
-  required = false 
+  required = false,
+  fileName = ''
 }) => {
-  const [fileName, setFileName] = useState<string>('');
+  const [localFileName, setLocalFileName] = useState<string>('');
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (fileName) {
+      setLocalFileName(fileName);
+    }
+  }, [fileName]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     if (file) {
-      setFileName(file.name);
+      setLocalFileName(file.name);
       onChange(file);
     } else {
-      setFileName('');
+      setLocalFileName('');
       onChange(null);
     }
   };
@@ -45,7 +53,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
     
     const file = e.dataTransfer.files?.[0] || null;
     if (file) {
-      setFileName(file.name);
+      setLocalFileName(file.name);
       onChange(file);
       
       // Update the file input for consistency
@@ -69,7 +77,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
       <div
         className={`relative border-2 border-dashed rounded-lg p-6 transition-colors duration-200 cursor-pointer
           ${isDragging ? 'border-gray-500 bg-gray-50' : 'border-gray-300 hover:border-gray-400'}
-          ${fileName ? 'bg-gray-50' : ''}`}
+          ${localFileName ? 'bg-gray-50' : ''}`}
         onClick={handleClick}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -86,9 +94,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
         
         <div className="text-center">
           <Upload className="mx-auto h-12 w-12 text-gray-400" />
-          {fileName ? (
+          {localFileName ? (
             <div className="mt-2">
-              <p className="text-sm font-medium text-gray-900">{fileName}</p>
+              <p className="text-sm font-medium text-gray-900">{localFileName}</p>
               <p className="text-xs text-gray-500 mt-1">Click to replace</p>
             </div>
           ) : (

@@ -20,7 +20,8 @@ function App() {
   const [results, setResults] = useState<{ text: EnhancedComparisonItem[] } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [selectedView, setSelectedView] = useState<'all' | 'changes'>('all');
+  // Always show all items by default
+  const selectedView = 'all';
 
   // Load sample data automatically for demo purposes
   useEffect(() => {
@@ -29,97 +30,12 @@ function App() {
       
       // Simulate loading delay
       setTimeout(async () => {
-        // Create a more comprehensive mock result with sample data
-        const sampleResult = {
-          text: [
-            {
-              section: "Document Title",
-              doc1: "Employee Handbook - 2023 Edition",
-              doc2: "Employee Handbook - 2023 Edition (Revised)",
-              changeType: 'modification' as const,
-              importance: 'medium' as const
-            },
-            {
-              section: "Legal Notice",
-              doc1: "© ACME Corporation 2023. All rights reserved.",
-              doc2: "© ACME Corporation 2023. All rights reserved.",
-              changeType: 'unchanged' as const,
-              importance: 'low' as const
-            },
-            {
-              section: "Introduction",
-              doc1: "This document outlines the company policies as of January 2023.",
-              doc2: "This document outlines the updated company policies as of March 2023. This revision incorporates feedback from the employee satisfaction survey.",
-              changeType: 'modification' as const,
-              importance: 'medium' as const
-            },
-            {
-              section: "Working Hours",
-              doc1: "Standard working hours are 9:00 AM to 5:00 PM, Monday through Friday.",
-              doc2: "Standard working hours are 8:00 AM to 4:00 PM, Monday through Friday.",
-              changeType: 'modification' as const,
-              importance: 'high' as const
-            },
-            {
-              section: "Remote Work",
-              doc1: "Remote work is allowed 2 days per week with manager approval.",
-              doc2: "Remote work is allowed 3 days per week without manager approval.",
-              changeType: 'modification' as const,
-              importance: 'high' as const
-            },
-            {
-              section: "Lunch Break",
-              doc1: "Employees are entitled to a 60-minute lunch break.",
-              doc2: "Employees are entitled to a 60-minute lunch break and two 15-minute rest periods.",
-              changeType: 'addition' as const,
-              importance: 'medium' as const
-            },
-            {
-              section: "Dress Code",
-              doc1: "Business casual attire is required in the office at all times.",
-              doc2: "Business casual attire is required when meeting with clients. Casual attire is acceptable on Fridays.",
-              changeType: 'modification' as const,
-              importance: 'medium' as const
-            },
-            {
-              section: "Travel Policy",
-              doc1: "All business travel requires approval from a department head.",
-              doc2: "All business travel requires approval from a department head.",
-              changeType: 'unchanged' as const,
-              importance: 'low' as const
-            },
-            {
-              section: "Health Insurance",
-              doc1: "The company covers 80% of health insurance premiums for employees.",
-              doc2: "The company covers 85% of health insurance premiums for employees and 50% for dependents.",
-              changeType: 'modification' as const,
-              importance: 'high' as const
-            },
-            {
-              section: "Annual Reviews",
-              doc1: "Performance reviews are conducted annually in December.",
-              doc2: "Performance reviews are conducted bi-annually in June and December.",
-              changeType: 'modification' as const,
-              importance: 'high' as const
-            },
-            {
-              section: "Parking Policy",
-              doc1: "Reserved parking is available for senior management only.",
-              doc2: "",
-              changeType: 'deletion' as const,
-              importance: 'medium' as const
-            },
-            {
-              section: "Flexible Spending Account",
-              doc1: "",
-              doc2: "Employees can contribute up to $2,750 to a Flexible Spending Account for healthcare expenses.",
-              changeType: 'addition' as const,
-              importance: 'medium' as const
-            }
-          ]
+        // Initialize with empty results
+        const emptyResult = {
+          text: []
         };
         
-        setResults(sampleResult);
+        setResults(emptyResult);
         setIsLoading(false);
       }, 1000);
     };
@@ -336,31 +252,6 @@ function App() {
               <h2 className="text-lg font-medium text-gray-900">Comparison Results</h2>
               
               <div className="flex space-x-2">
-                {results && (
-                  <div className="flex mr-4">
-                    <button
-                      onClick={() => setSelectedView('all')}
-                      className={`px-3 py-1 text-sm rounded-l-md ${
-                        selectedView === 'all' 
-                          ? 'bg-gray-800 text-white' 
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      All Items
-                    </button>
-                    <button
-                      onClick={() => setSelectedView('changes')}
-                      className={`px-3 py-1 text-sm rounded-r-md ${
-                        selectedView === 'changes' 
-                          ? 'bg-gray-800 text-white' 
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      Changes Only
-                    </button>
-                  </div>
-                )}
-                
                 <button
                   onClick={handleCopy}
                   className="p-2 rounded-md text-gray-600 hover:bg-gray-100"
@@ -454,102 +345,20 @@ function App() {
                 </div>
               ) : results ? (
                 <div>
-                  {/* Summary section */}
-                  <div className="bg-white p-4 mb-4 rounded-md border border-gray-200">
-                    <h3 className="text-sm font-medium text-gray-700 mb-2">Summary</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <h4 className="text-xs font-medium text-gray-500 mb-1">Change Types</h4>
-                        <div className="flex space-x-2">
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-800">
-                            {results.text.filter(i => i.changeType === 'addition').length} Additions
-                          </span>
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-800">
-                            {results.text.filter(i => i.changeType === 'deletion').length} Deletions
-                          </span>
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-800">
-                            {results.text.filter(i => i.changeType === 'modification').length} Modifications
-                          </span>
-                        </div>
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-medium text-gray-500 mb-1">Priority</h4>
-                        <div className="flex space-x-2">
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-900 text-white">
-                            {results.text.filter(i => i.importance === 'high').length} High
-                          </span>
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-700 text-white">
-                            {results.text.filter(i => i.importance === 'medium').length} Medium
-                          </span>
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-500 text-white">
-                            {results.text.filter(i => i.importance === 'low').length} Low
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-2 text-xs text-gray-500">
-                      <p>This is a demo comparison of an employee handbook. In a real application, you could compare any two documents.</p>
-                    </div>
-                  </div>
-                  
-                  {/* Detailed comparison results - now in a scrollable container */}
+                  {/* Simple text area for displaying content */}
                   <div className="border border-gray-200 rounded-md shadow-sm">
                     <div className="p-3 bg-gray-100 border-b border-gray-200">
-                      <h3 className="text-sm font-medium text-gray-700">Detailed Comparison</h3>
+                      <h3 className="text-sm font-medium text-gray-700">Document Comparison</h3>
                     </div>
                     <div className="h-[500px] overflow-y-auto p-4 bg-white">
-                      <div className="space-y-4">
-                        {getFilteredResults().map((item, index) => {
-                          // Set border and background to grayscale
-                          let borderClass = 'border-gray-300';
-                          let bgClass = 'bg-white';
-                          
-                          // Use varying shades of gray based on importance
-                          if (item.importance === 'high') {
-                            bgClass = 'bg-gray-100';
-                          }
-                          
-                          return (
-                            <div key={index} className={`rounded-md overflow-hidden border ${borderClass}`}>
-                              <div className={`px-4 py-2 flex justify-between items-center ${bgClass} border-b border-gray-200`}>
-                                <h3 className="font-medium text-gray-900">{item.section}</h3>
-                                <div className="flex space-x-2">
-                                  {item.changeType && (
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-200 text-gray-800">
-                                      {item.changeType}
-                                    </span>
-                                  )}
-                                  {item.importance && (
-                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
-                                      ${item.importance === 'high' ? 'bg-gray-900 text-white' : 
-                                        item.importance === 'medium' ? 'bg-gray-700 text-white' : 
-                                        'bg-gray-500 text-white'}`}
-                                    >
-                                      {item.importance} priority
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white">
-                                <div className="bg-gray-50 p-3 rounded border border-gray-200">
-                                  <div className="flex items-center mb-1">
-                                    <FileText className="h-3 w-3 mr-1 text-gray-400" />
-                                    <p className="text-xs text-gray-500">Document 1</p>
-                                  </div>
-                                  <p className="text-sm">{item.doc1 || <em className="text-gray-400">No content</em>}</p>
-                                </div>
-                                <div className="bg-gray-50 p-3 rounded border border-gray-200">
-                                  <div className="flex items-center mb-1">
-                                    <FileText className="h-3 w-3 mr-1 text-gray-400" />
-                                    <p className="text-xs text-gray-500">Document 2</p>
-                                  </div>
-                                  <p className="text-sm">{item.doc2 || <em className="text-gray-400">No content</em>}</p>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
+                      <textarea 
+                        className="w-full h-full p-4 border border-gray-200 rounded-md resize-none focus:outline-none"
+                        placeholder="Enter text here..."
+                        readOnly
+                        value={results.text.map(item => 
+                          `${item.section}\n\nDocument 1:\n${item.doc1 || 'No content'}\n\nDocument 2:\n${item.doc2 || 'No content'}\n\n---\n\n`
+                        ).join('')}
+                      ></textarea>
                     </div>
                   </div>
                 </div>

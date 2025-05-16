@@ -1,89 +1,66 @@
 # Document Comparison Tool
 
-This application allows users to upload and compare two documents, highlighting differences with varying importance levels for easy analysis.
-
-## Architecture Overview
-
-```mermaid
-graph TD
-    User[User] -->|Upload Documents| FE[Frontend App]
-    FE -->|Process Documents| Comparison[Comparison Engine]
-    Comparison -->|Generate Results| Results[Results View]
-    Results -->|Export| Export[Export Options]
-    
-    subgraph Frontend
-        FE
-        FileUpload[File Upload Component]
-        ComparisonForm[Comparison Settings]
-        ComparisonResults[Results Display]
-        Button[UI Components]
-    end
-    
-    FE --> FileUpload
-    FE --> ComparisonForm
-    FE --> ComparisonResults
-    ComparisonResults --> Button
-```
+This application allows you to compare two documents and identify key differences between them. It uses Azure OpenAI to perform intelligent document comparison.
 
 ## Features
 
-- **Document Upload**: Upload two documents for comparison
-- **Side-by-Side Comparison**: View documents with synchronized scrolling
-- **Highlighted Differences**: Visual highlighting of changes with importance levels
-- **Export Options**: Save results in multiple formats
-- **Responsive Design**: Works on desktop and mobile devices
+- Upload and compare two documents (PDF, DOC, DOCX, TXT)
+- Specify comparison criteria
+- Identify additions, deletions, and modifications between documents
+- Assess the importance of each change
+- Export comparison results in multiple formats
 
-## Tech Stack
+## Quick Start with Pre-loaded Tesla Annual Reports
 
-- **React**: UI component library
-- **TypeScript**: Type-safe JavaScript
-- **Tailwind CSS**: Utility-first CSS framework
-- **Vite**: Fast bundling and development
-- **Radix UI**: Accessible UI primitives
+The application includes two pre-loaded documents for easy testing:
+- Tesla's 2022 Annual Report
+- Tesla's 2023 Annual Report
 
-## Getting Started
+Simply click the "Upload Tesla's Annual Report" buttons next to each file upload area to automatically load these documents.
 
-### Prerequisites
+## Environment Configuration
 
-- Node.js (v18 or later)
-- npm or yarn
+To use the Azure OpenAI integration, you need to set up environment variables:
 
-### Installation
+1. Create a `.env` file in the root directory with the following variables:
 
-```bash
-# Clone the repository
-git clone https://github.com/harshith-eth/stackai-document-comparision.git
+```
+# Azure OpenAI Configuration
+AZURE_OPENAI_API_KEY=your_api_key_here
+AZURE_OPENAI_ENDPOINT=your_endpoint_here
+AZURE_OPENAI_DEPLOYMENT_NAME=your_deployment_name_here
+AZURE_OPENAI_API_VERSION=your_api_version_here
+AZURE_OPENAI_RESOURCE_NAME=your_resource_name_here
+```
 
-# Navigate to the project directory
-cd stackai-document-comparision
+2. Replace the placeholder values with your actual Azure OpenAI credentials.
 
-# Install dependencies
+> **Note:** The `.env` file is excluded from version control for security reasons. Never commit your API keys to a public repository.
+
+## Development Setup
+
+1. Install dependencies:
+```
 npm install
+```
 
-# Start the development server
+2. Start the development server:
+```
 npm run dev
 ```
 
-## Project Structure
+3. Build for production:
+```
+npm run build
+```
 
-```
-document-comparision/
-├── public/                  # Static assets
-├── src/
-│   ├── components/          # UI components
-│   │   ├── ui/              # Base UI components
-│   │   ├── Header.tsx       # Application header
-│   │   ├── Button.tsx       # Custom button component
-│   │   ├── ComparisonForm.tsx    # Document settings form
-│   │   ├── ComparisonResults.tsx # Results display
-│   │   └── FileUpload.tsx        # File upload handling
-│   ├── types/               # TypeScript type definitions
-│   ├── utils/               # Utility functions
-│   ├── App.tsx              # Main application component
-│   └── main.tsx             # Application entry point
-├── package.json             # Project dependencies
-└── tsconfig.json            # TypeScript configuration
-```
+## Technical Stack
+
+- React with TypeScript
+- Vite for build tooling
+- Azure OpenAI for document comparison
+- File handling with browser APIs
+- Responsive design with Tailwind CSS
 
 ## License
 
